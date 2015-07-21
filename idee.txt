@@ -1,0 +1,16 @@
+idea 1:
+spacco un file in gruppi di 128 byte (il numero è indicativo e passibile di modifiche). Una volta ho bisogno di inviare quel frammento di file accedo al file. specifico il numero del pacchetto, viene estratto solo il contenuto del pacchetto richesto e viene spedito in rete.
+
+idea 2:
+per l'invio del pacchetto occorre seguire un sequenza predefinita di passaggi. Poniamo che S sia il server e C il client.
+C --> S (invio pacchetto con richiesta di un frammento del file con indice 1234)
+S --> C (invio pacchetto con disponibilità del frammento 1)
+C --> S (invio pacchetto con conferma frammento 1)
+S --> C (invio pacchetto contentente frammento 1)
+
+oppure
+
+C --> S (invio pacchetto con richiesta di un frammento del file con indice 1234)
+S --> C (invio pacchetto con disponibilità del frammento 1)
+C --> S (invio pacchetto con rifiuto frammento 1 ma richiesta frammento 5)
+S --> C (invio pacchetto contentente frammento 5)
