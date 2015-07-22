@@ -5,3 +5,5 @@ visione dei contenuti non su server proprietari, besnì a carico degli utenti.
 L'innovazione che il progetto intende implementare è equidistribuire i contenuti
 in modo da bialnciare il carico di distribuzione fra tutti i condivisori della
 rete.
+ENU: Parallel project target is create a new distribution web binary contents on
+web
