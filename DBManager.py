@@ -65,21 +65,28 @@ class DBManager:
                                     Share_Primary_Key INTEGER PRIMARY KEY ASC,
                                     Share_Value BLOB
                                 )""")
-                    G_Cur.execute("""insert into share_""" + P_File_Index + """ (Share_Primary_Key, Share_Value)
-                                 values (1, X'0102030405060708090a0b0c0d0e0f')""")
                 except:
-                    print("""Error DBManager.InsertNewSharedFile.003 - i can't creatre 'share_""" + P_File_Index + """' table""")
+                    print("""Error DBManager.InsertNewSharedFile.004 - i can't creatre 'share_""" + P_File_Index + """' table""")
+                try:
+                    # loop file and insert bynary packages here....
+                    p = Parallel.Parallel(P_File_Name)
+                    L_count = p.FilePackageCount()
+                    i = 0
+                    while i < (L_count):
+                        out = []
+                        for c in p.GetReadPackage(i):
+                            out.append(c)
+                        blob = bytearray(out)
+                        G_Cur.execute("""insert into share_""" + P_File_Index + """ (Share_Primary_Key, Share_Value)
+                                            values (""" + str(i+1) + """, ?)""", (blob,))
+                        i += 1
+                    G_Con.commit()
+                except:
+                    #print("""Error DBManager.InsertNewSharedFile.005 - i can't insert """ + blob.tostring() + """ into 'share_""" + P_File_Index + """' table""")
+                    print("""Error DBManager.InsertNewSharedFile.005 - i can't insert 'something' into 'share_""" + P_File_Index + """' table""")
             else:
-                print("""Error DBManager.InsertNewSharedFile.002 - file '""" + P_File_Name + """' with index '""" 
+                print("""Error DBManager.InsertNewSharedFile.003 - file '""" + P_File_Name + """' with index '""" 
                     + P_File_Index + """' already exists into 'indexes' table""")
         except:
-            print("""Error DBManager.InsertNewSharedFile.001 - i can't insert file '""" + P_File_Name + """' with index '""" 
+            print("""Error DBManager.InsertNewSharedFile.002 - i can't insert file '""" + P_File_Name + """' with index '""" 
                 + P_File_Index + """' into 'indexes' table""")
-        
-'''
-#print(cur.fetchall())
-for result in cur.fetchall():
-    for value in result:
-        print(value)
-    print('############')
-'''
