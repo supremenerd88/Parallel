@@ -19,13 +19,20 @@ class Parallel:
             print("Error Parallel.Init.001 - i can't open file ", P_file_name)
 
     def GetReadPackage(self, P_package_number):
+        #return package referred to package number received from the parameter
         G_read_file.seek(G_package_byte_dimension*P_package_number)
         O_pkg = G_read_file.read(G_package_byte_dimension)
         return O_pkg
 
     def FilePackageCount(self):
+        #count how many packages will be create
         O_count = int(math.ceil(os.path.getsize(G_read_file.name)/G_package_byte_dimension))
         return O_count
+
+    def TestFileExists(self, P_file_name):
+        #check if file exists on path specified
+        #under construction...
+        return False
 
     # this is a test function
     def GetFileOutput(self, P_file_name):        

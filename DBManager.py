@@ -1,4 +1,4 @@
-import platform
+import Parallel
 import sqlite3
 
 # variables name definition:
@@ -60,15 +60,17 @@ class DBManager:
                                 '""" + P_File_Name + """',
                                 '""" + P_File_Index + """'
                             )""")
+                G_Con.commit()
                 try:
                     G_Cur.execute("""create table share_""" + P_File_Index + """(
                                     Share_Primary_Key INTEGER PRIMARY KEY ASC,
                                     Share_Value BLOB
                                 )""")
+                    G_Con.commit()
                 except:
                     print("""Error DBManager.InsertNewSharedFile.004 - i can't creatre 'share_""" + P_File_Index + """' table""")
                 try:
-                    # loop file and insert bynary packages here....
+                    # loop file and insert bynary packages
                     p = Parallel.Parallel(P_File_Name)
                     L_count = p.FilePackageCount()
                     i = 0
@@ -81,6 +83,7 @@ class DBManager:
                                             values (""" + str(i+1) + """, ?)""", (blob,))
                         i += 1
                     G_Con.commit()
+                    print("file '" + P_File_Name + "' with index '" + P_File_Index + "' insert into 'share_" + P_File_Index + "'' table")
                 except:
                     #print("""Error DBManager.InsertNewSharedFile.005 - i can't insert """ + blob.tostring() + """ into 'share_""" + P_File_Index + """' table""")
                     print("""Error DBManager.InsertNewSharedFile.005 - i can't insert 'something' into 'share_""" + P_File_Index + """' table""")
@@ -90,3 +93,54 @@ class DBManager:
         except:
             print("""Error DBManager.InsertNewSharedFile.002 - i can't insert file '""" + P_File_Name + """' with index '""" 
                 + P_File_Index + """' into 'indexes' table""")
+
+    def RecoveryFileFromDB(self, P_File_Name, P_File_Index):
+        #recovery file from DB and save it into path specified in P_File_Name variable with specified name        
+        L_SqlQuery = "select COUNT(*) from share_" + P_File_Index
+        G_Cur.execute(L_SqlQuery)
+        for c in G_Cur.fetchone():
+            if c == None:
+                L_count = 0
+            else:
+                L_count = int(c)
+
+        i = 0
+        exit_bytearray = bytearray([])
+        L_SqlQuery = "select Share_Value from share_" + P_File_Index + " order by Share_Primary_Key"
+        G_Cur.execute(L_SqlQuery)
+        try:            
+            while i < (L_count):
+                for c in G_Cur.fetchone():
+                    exit_bytearray += c
+                i += 1
+        except:
+            print("Error DBManager.RecoveryFileFromDB.001 - i can't read " + str(i) + " package")
+
+        f = open(P_File_Name,'wb')
+        f.write(exit_bytearray)
+        f.close()
+
+    def DeleteShareFile(self, P_File_Index):
+        #delete a file into DB. This function delete index and tables linked to shared file.
+        try:
+            L_SqlQuery = "delete from indexes where Indexes_Index = '" + P_File_Index + "'"
+            G_Cur.execute(L_SqlQuery)
+            try:
+                L_SqlQuery = "drop table share_" + P_File_Index
+                G_Cur.execute(L_SqlQuery)
+                G_Con.commit()
+                try:
+                    #this query empty free space from DB
+                    L_SqlQuery = "VACUUM"
+                    G_Cur.execute(L_SqlQuery)
+                    G_Con.commit()
+                except sqlite3.Error as e:
+                    print("Error DBManager.DeleteShareFile.003 - " + e)
+            except sqlite3.Error as e:
+                print("Error DBManager.DeleteShareFile.002 - " + e)
+        except sqlite3.Error as e:
+            print("Error DBManager.DeleteShareFile.001 - " + e)
+
+    def CloseConnection(self):
+        #close connection
+        G_Con.close()
