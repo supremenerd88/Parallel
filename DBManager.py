@@ -29,7 +29,8 @@ class DBManager:
                 G_Cur.execute("""create table indexes(
                                 Indexes_Primary_Key INTEGER PRIMARY KEY,
                                 Indexes_File_Name TEXT,
-                                Indexes_Index TEXT
+                                Indexes_Index TEXT,
+                                Indexes_Pkg_Count INTEGER
                             )""")
                 return True
             except:
@@ -54,11 +55,15 @@ class DBManager:
                         L_Index_Value = 1
                     else:
                         L_Index_Value += c
-                G_Cur.execute("""insert into indexes(Indexes_Primary_Key, Indexes_File_Name, Indexes_Index)
+                # loop file and insert bynary packages
+                p = Parallel.Parallel(P_File_Name)
+                L_count = p.FilePackageCount()
+                G_Cur.execute("""insert into indexes(Indexes_Primary_Key, Indexes_File_Name, Indexes_Index, Indexes_Pkg_Count)
                             values (
                                 """ + str(L_Index_Value) + """,
                                 '""" + P_File_Name + """',
-                                '""" + P_File_Index + """'
+                                '""" + P_File_Index + """',
+                                '""" + str(L_count) + """'
                             )""")
                 G_Con.commit()
                 try:
@@ -70,9 +75,15 @@ class DBManager:
                 except:
                     print("""Error DBManager.InsertNewSharedFile.004 - i can't creatre 'share_""" + P_File_Index + """' table""")
                 try:
-                    # loop file and insert bynary packages
-                    p = Parallel.Parallel(P_File_Name)
-                    L_count = p.FilePackageCount()
+                    G_Cur.execute("""create table pkgshared_""" + P_File_Index + """(
+                                    Pkgshared_Primary_Key INTEGER PRIMARY KEY ASC,
+                                    Pkgshared_Package_No INTEGER,
+                                    Pkgshared_Count INTEGER
+                                )""")
+                    G_Con.commit()
+                except:
+                    print("""Error DBManager.InsertNewSharedFile.006 - i can't creatre 'pkgshared_""" + P_File_Index + """' table""")
+                try:
                     i = 0
                     while i < (L_count):
                         out = []
@@ -81,6 +92,8 @@ class DBManager:
                         blob = bytearray(out)
                         G_Cur.execute("""insert into share_""" + P_File_Index + """ (Share_Primary_Key, Share_Value)
                                             values (""" + str(i+1) + """, ?)""", (blob,))
+                        G_Cur.execute("""insert into pkgshared_""" + P_File_Index + """ (Pkgshared_Primary_Key, Pkgshared_Package_No, 
+                                        Pkgshared_Count) values (""" + str(i+1) + """, """ + str(i+1) + """, 0)""")
                         i += 1
                     G_Con.commit()
                     print("file '" + P_File_Name + "' with index '" + P_File_Index + "' insert into 'share_" + P_File_Index + "'' table")
@@ -106,19 +119,26 @@ class DBManager:
 
         i = 0
         exit_bytearray = bytearray([])
-        L_SqlQuery = "select Share_Value from share_" + P_File_Index + " order by Share_Primary_Key"
-        G_Cur.execute(L_SqlQuery)
-        try:            
-            while i < (L_count):
-                for c in G_Cur.fetchone():
-                    exit_bytearray += c
-                i += 1
-        except:
-            print("Error DBManager.RecoveryFileFromDB.001 - i can't read " + str(i) + " package")
+        while i < (L_count):
+            exit_bytearray += self.ReturnPackageValue(P_File_Index, i+1)
+            i += 1
 
         f = open(P_File_Name,'wb')
         f.write(exit_bytearray)
         f.close()
+
+    def ReturnPackageValue(self, P_File_Index, P_Pkg_Count):
+        #return specified package from specified file index
+        L_SqlQuery = """select Share_Value from share_""" + P_File_Index + """ 
+                        where Share_Primary_Key = """ + str(P_Pkg_Count) + """ order by Share_Primary_Key"""
+        G_Cur.execute(L_SqlQuery)
+        try:            
+            exit_bytearray = bytearray([])
+            for c in G_Cur.fetchone():
+                exit_bytearray += c
+            return exit_bytearray
+        except:
+            print("Error DBManager.ReturnPackageValue.001 - i can't read " + str(P_Pkg_Count) + " package")
 
     def DeleteShareFile(self, P_File_Index):
         #delete a file into DB. This function delete index and tables linked to shared file.
@@ -127,6 +147,8 @@ class DBManager:
             G_Cur.execute(L_SqlQuery)
             try:
                 L_SqlQuery = "drop table share_" + P_File_Index
+                G_Cur.execute(L_SqlQuery)
+                L_SqlQuery = "drop table pkgshared_" + P_File_Index
                 G_Cur.execute(L_SqlQuery)
                 G_Con.commit()
                 try:

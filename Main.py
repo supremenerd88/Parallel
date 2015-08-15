@@ -19,5 +19,6 @@ if __name__ == "__main__":
     dbm.RecoveryFileFromDB('E:\\Python Projects\\Parallel\\test\\mp3_exit.mp3', '0x0000000000000004');
     dbm.RecoveryFileFromDB('E:\\Python Projects\\Parallel\\test\\flv_exit.mp3', '0x0000000000000005');
     #dbm.DeleteShareFile('0x0000000000000004');
+    print(dbm.ReturnPackageValue('0x0000000000000002', 5));
     dbm.CloseConnection();
     #dbm.InsertNewSharedFile('pippo', 'pluto');
